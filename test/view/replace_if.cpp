@@ -9,6 +9,14 @@
 //
 // Project home: https://github.com/ericniebler/range-v3
 
+// HACKHACKHACK silence false positive:
+//   error: ‘<anonymous>.ranges::v3::istream_range<int>::cursor::rng_’ may be used uninitialized in this function
+// triggered on line 39.
+#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ >= 7
+#include <range/v3/detail/config.hpp>
+RANGES_DIAGNOSTIC_IGNORE("-Wmaybe-uninitialized")
+#endif
+
 #include <string>
 #include <sstream>
 #include <vector>
@@ -85,6 +93,14 @@ int main()
     ::check_equal(mutable_only, {42,1,42,3,42,5,42,7,42,9});
     CONCEPT_ASSERT(View<decltype(mutable_only)>());
     CONCEPT_ASSERT(!View<decltype(mutable_only) const>());
+
+    {
+        int const some_ints[] = {1,2,3,4,5,6,7,8,9,1,2,3,4,5,6,7,8,9,1,2,3,4,5,6,7,8,9};
+
+        auto rng = debug_input_view<int const>{some_ints} |
+            view::replace_if([](int i){ return i == 1; }, 42);
+        ::check_equal(rng, {42,2,3,4,5,6,7,8,9,42,2,3,4,5,6,7,8,9,42,2,3,4,5,6,7,8,9});
+    }
 
     return test_result();
 }
